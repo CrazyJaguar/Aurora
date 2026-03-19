@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aurora Hospital</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { margin: 0; padding: 0; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ─── GLOBAL STYLES ─── */
+const globalCSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Outfit', sans-serif; background: #faf8f4; color: #1c1917; overflow-x: hidden; }
+
+  :root {
+    --sand: #faf8f4;
+    --sand2: #f2ede4;
+    --sand3: #e8dfd0;
+    --sky: #4a7fa5;
+    --sky-light: #e8f2f9;
+    --sky-mid: #b8d4e8;
+    --terra: #c47a4a;
+    --terra-light: #f5e8dc;
+    --sage: #5a7a5c;
+    --sage-light: #e4ede4;
+    --ink: #1c1917;
+    --ink-mid: #44403c;
+    --ink-light: #78716c;
+    --border: #e2d9cc;
+    --shadow-sm: 0 2px 12px rgba(28,25,23,0.06);
+    --shadow-md: 0 8px 40px rgba(28,25,23,0.1);
+    --shadow-lg: 0 20px 80px rgba(28,25,23,0.14);
+    --r-sm: 12px;
+    --r-md: 20px;
+    --r-lg: 32px;
+  }
+
+  ::selection { background: var(--sky-mid); color: var(--ink); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--sand2); }
+  ::-webkit-scrollbar-thumb { background: var(--sky-mid); border-radius: 3px; }
+
+  /* Animations */
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(32px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
+  @keyframes slideIn  { from { opacity:0; transform:translateX(-24px); } to { opacity:1; transform:translateX(0); } }
+  @keyframes floatUp  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  @keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  @keyframes spin     { to { transform: rotate(360deg); } }
+
+  .anim-fadeup  { animation: fadeUp  0.7s ease both; }
+  .anim-fadein  { animation: fadeIn  0.6s ease both; }
+  .anim-slidein { animation: slideIn 0.6s ease both; }
+
+  /* Page transitions */
+  .page-enter { animation: fadeUp 0.5s ease both; }
+
+  /* Reveal on scroll */
+  .reveal { opacity:0; transform:translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.in { opacity:1; transform:translateY(0); }
+
+  /* Utility */
+  .tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--sky-light); color: var(--sky);
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 5px 14px; border-radius: 50px;
+  }
+  .tag.terra { background: var(--terra-light); color: var(--terra); }
+  .tag.sage  { background: var(--sage-light);  color: var(--sage);  }
+  .tag::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+  .section-heading {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    font-weight: 600;
+    line-height: 1.15;
+    color: var(--ink);
+  }
+  .section-heading em { font-style: italic; color: var(--sky); }
+  .section-heading .terra { color: var(--terra); }
+
+  .section-sub {
+    font-size: 1rem; font-weight: 300; color: var(--ink-light);
+    line-height: 1.8; max-width: 540px;
+  }
+
+  /* Btn */
+  .btn { display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer; font-family: 'Outfit', sans-serif; font-weight: 500; transition: all 0.25s ease; text-decoration: none; }
+  .btn-sky  { background: var(--sky);  color: white; padding: 0.85rem 2rem; border-radius: 50px; font-size: 0.9rem; }
+  .btn-sky:hover  { background: #3a6a8f; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(74,127,165,0.35); }
+  .btn-terra{ background: var(--terra); color: white; padding: 0.85rem 2rem; border-radius: 50px; font-size: 0.9rem; }
+  .btn-terra:hover{ background: #a8623a; transform:translateY(-2px); box-shadow: 0 8px 24px rgba(196,122,74,0.35); }
+  .btn-outline { background: transparent; color: var(--sky); padding: 0.82rem 1.9rem; border-radius: 50px; font-size: 0.9rem; border: 1.5px solid var(--sky); }
+  .btn-outline:hover { background: var(--sky-light); }
+  .btn-outline-sand { background: transparent; color: white; padding: 0.82rem 1.9rem; border-radius: 50px; font-size: 0.9rem; border: 1.5px solid rgba(255,255,255,0.5); }
+  .btn-outline-sand:hover { background: rgba(255,255,255,0.12); }
+
+  /* Card base */
+  .card { background: white; border-radius: var(--r-md); border: 1px solid var(--border); transition: all 0.3s ease; }
+  .card:hover { box-shadow: var(--shadow-md); transform: translateY(-4px); }
+
+  /* Input */
+  .inp {
+    width: 100%; border: 1.5px solid var(--border); border-radius: var(--r-sm);
+    padding: 0.78rem 1rem; font-family: 'Outfit', sans-serif; font-size: 0.9rem;
+    background: var(--sand); color: var(--ink); outline: none; transition: border-color 0.2s, background 0.2s;
+    -webkit-appearance: none;
+  }
+  .inp:focus { border-color: var(--sky); background: white; }
+  .inp-label { font-size: 0.75rem; font-weight: 600; color: var(--ink-light); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 6px; display: block; }
+
+  /* NAV */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 300;
+    height: 70px; padding: 0 5%;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(250,248,244,0.92); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    transition: box-shadow 0.3s;
+  }
+  .nav.scrolled { box-shadow: var(--shadow-sm); }
+  .nav-logo-wrap { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .nav-logo-icon {
+    width: 38px; height: 38px; background: var(--sky);
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; color: white; font-weight: 700; flex-shrink: 0;
+  }
+  .nav-logo-text { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; color: var(--ink); }
+  .nav-logo-text span { color: var(--sky); }
+  .nav-links { display: flex; gap: 0.2rem; list-style: none; align-items: center; }
+  .nav-link {
+    padding: 0.45rem 1rem; border-radius: 8px; font-size: 0.88rem; color: var(--ink-mid);
+    cursor: pointer; transition: all 0.2s; font-weight: 400; border: none; background: none;
+    font-family: 'Outfit', sans-serif;
+  }
+  .nav-link:hover { background: var(--sand2); color: var(--sky); }
+  .nav-link.active { color: var(--sky); font-weight: 600; background: var(--sky-light); }
+  .nav-cta { margin-left: 0.8rem; }
+  .ham { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 6px; background: none; border: none; z-index: 301; }
+  .ham span { display: block; width: 22px; height: 2px; background: var(--ink); border-radius: 2px; transition: all 0.3s; }
+  .ham.open span:nth-child(1){ transform:translateY(7px) rotate(45deg); }
+  .ham.open span:nth-child(2){ opacity:0; }
+  .ham.open span:nth-child(3){ transform:translateY(-7px) rotate(-45deg); }
+  .mob-nav {
+    display: none; position: fixed; top: 70px; left: 0; right: 0; z-index: 299;
+    background: white; border-bottom: 1px solid var(--border);
+    padding: 1.5rem 5% 2rem; flex-direction: column; gap: 0.2rem;
+    opacity: 0; transform: translateY(-8px); pointer-events: none;
+    transition: all 0.3s ease; box-shadow: var(--shadow-md);
+  }
+  .mob-nav.open { opacity:1; transform:translateY(0); pointer-events:all; }
+  .mob-nav-link {
+    padding: 0.85rem 1rem; border-radius: 10px; font-size: 1rem;
+    color: var(--ink-mid); cursor: pointer; border: none; background: none;
+    font-family: 'Outfit', sans-serif; text-align: left; width: 100%;
+    transition: all 0.2s;
+  }
+  .mob-nav-link:hover { background: var(--sand2); color: var(--sky); }
+  .mob-nav-link.active { background: var(--sky-light); color: var(--sky); font-weight: 600; }
+  .mob-nav-cta { margin-top: 0.8rem; width: 100%; justify-content: center; border-radius: 12px; padding: 0.9rem; }
+
+  /* HERO */
+  .hero { min-height: 100vh; padding-top: 70px; display: grid; grid-template-columns: 1fr 1fr; }
+  .hero-left {
+    padding: 6% 5% 6% 8%; display: flex; flex-direction: column; justify-content: center;
+    background: var(--sand);
+  }
+  .hero-right { background: var(--sky); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .hero-right-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #4a7fa5 0%, #3a6a8f 40%, #2d5470 100%);
+  }
+  .hero-right-pattern {
+    position: absolute; inset: 0; opacity: 0.08;
+    background-image: radial-gradient(circle, white 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  .hero-visual { position: relative; z-index: 2; width: 80%; max-width: 380px; }
+  .hero-card-main {
+    background: rgba(255,255,255,0.14); backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.25); border-radius: var(--r-lg);
+    padding: 2rem; color: white;
+  }
+  .hero-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+  .hero-stat-box {
+    background: rgba(255,255,255,0.12); border-radius: var(--r-sm);
+    padding: 1.1rem; text-align: center; border: 1px solid rgba(255,255,255,0.15);
+  }
+  .hero-stat-num { font-family: 'Playfair Display', serif; font-size: 1.9rem; font-weight: 700; color: white; }
+  .hero-stat-lbl { font-size: 0.72rem; color: rgba(255,255,255,0.72); margin-top: 2px; font-weight: 400; }
+  .hero-float-card {
+    position: absolute; background: white; border-radius: var(--r-md);
+    box-shadow: var(--shadow-md); padding: 0.9rem 1.1rem; z-index: 10;
+  }
+  .hfc-top  { top: 14%; right: 6%; animation: floatUp 5s ease-in-out infinite; }
+  .hfc-bot  { bottom: 14%; left: 6%; animation: floatUp 5s ease-in-out infinite 2.5s; }
+  .hfc-label{ font-size: 0.68rem; font-weight: 600; color: var(--ink-light); text-transform: uppercase; letter-spacing: 0.06em; }
+  .hfc-val  { font-size: 0.95rem; font-weight: 600; color: var(--ink); margin-top: 3px; white-space: nowrap; }
+  .hfc-sub  { font-size: 0.72rem; color: var(--sky); margin-top: 2px; white-space: nowrap; }
+  .dot-live { display: inline-block; width: 7px; height: 7px; background: #4ade80; border-radius: 50%; animation: pulse 1.5s infinite; margin-right: 4px; }
+
+  /* DEPARTMENTS PAGE */
+  .dept-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+  .dept-card {
+    background: white; border-radius: var(--r-md); border: 1px solid var(--border);
+    padding: 2rem; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;
+  }
+  .dept-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background: var(--sky); transform: scaleX(0); transition: transform 0.3s ease; transform-origin: left; }
+  .dept-card:hover::before { transform: scaleX(1); }
+  .dept-card:hover { box-shadow: var(--shadow-md); transform: translateY(-4px); border-color: var(--sky-mid); }
+  .dept-icon { width: 56px; height: 56px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; margin-bottom: 1.2rem; }
+  .dept-name { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .dept-desc { font-size: 0.84rem; color: var(--ink-light); line-height: 1.7; }
+  .dept-count { display: inline-flex; align-items: center; gap: 5px; font-size: 0.78rem; color: var(--sky); font-weight: 600; margin-top: 1rem; }
+
+  /* DOCTORS PAGE */
+  .doc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.8rem; }
+  .doc-card { background: white; border-radius: var(--r-md); border: 1px solid var(--border); overflow: hidden; transition: all 0.3s; cursor: pointer; }
+  .doc-card:hover { box-shadow: var(--shadow-md); transform: translateY(-5px); }
+  .doc-photo { aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; position: relative; }
+  .doc-d1{background:linear-gradient(160deg,#e8f2f9,#c8e0f0)}
+  .doc-d2{background:linear-gradient(160deg,#f5e8dc,#ebd4bc)}
+  .doc-d3{background:linear-gradient(160deg,#e4ede4,#c8dcc8)}
+  .doc-d4{background:linear-gradient(160deg,#f0ece4,#e2d8c8)}
+  .doc-d5{background:linear-gradient(160deg,#f5eaf2,#e8d0e4)}
+  .doc-d6{background:linear-gradient(160deg,#e4ece8,#c8dcd4)}
+  .doc-body { padding: 1.4rem; }
+  .doc-name { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 600; }
+  .doc-spec { font-size: 0.78rem; color: var(--sky); font-weight: 600; margin-top: 3px; }
+  .doc-exp  { font-size: 0.78rem; color: var(--ink-light); margin-top: 2px; }
+  .doc-stars{ color: #f59e0b; font-size: 0.85rem; margin-top: 8px; }
+  .doc-avail{ display: inline-flex; align-items: center; gap: 5px; font-size: 0.74rem; color: var(--sage); font-weight: 600; margin-top: 8px; }
+
+  /* ABOUT */
+  .about-hero { min-height: 60vh; padding-top: 70px; background: linear-gradient(135deg, #4a7fa5, #3a6a8f); display: flex; align-items: center; justify-content: center; text-align: center; padding-left: 8%; padding-right: 8%; position: relative; overflow: hidden; }
+  .about-pattern { position: absolute; inset:0; opacity:0.06; background-image: radial-gradient(circle, white 1.5px, transparent 1.5px); background-size: 32px 32px; }
+  .timeline { display: flex; flex-direction: column; gap: 0; position: relative; }
+  .timeline::before { content:''; position:absolute; left:28px; top:0; bottom:0; width:2px; background:var(--border); }
+  .tl-item { display: flex; gap: 2rem; padding-bottom: 2.5rem; position: relative; }
+  .tl-dot { width: 58px; height: 58px; min-width: 58px; border-radius: 50%; background: var(--sky); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: white; position: relative; z-index: 1; box-shadow: 0 0 0 6px var(--sky-light); }
+  .tl-year { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; color: var(--sky); }
+  .tl-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 600; margin-top: 0.2rem; }
+  .tl-desc { font-size: 0.85rem; color: var(--ink-light); line-height: 1.7; margin-top: 0.4rem; }
+  .values-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.3rem; }
+  .val-card { background: white; border-radius: var(--r-md); border: 1px solid var(--border); padding: 1.8rem; text-align: center; transition: all 0.3s; }
+  .val-card:hover { box-shadow: var(--shadow-sm); transform: translateY(-3px); }
+  .val-icon { font-size: 2rem; margin-bottom: 0.8rem; }
+  .val-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 600; margin-bottom: 0.4rem; }
+  .val-desc { font-size: 0.82rem; color: var(--ink-light); line-height: 1.65; }
+
+  /* CONTACT */
+  .contact-grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 4rem; align-items: start; }
+  .contact-info-card { background: var(--sky); border-radius: var(--r-lg); padding: 3rem; color: white; }
+  .ci-item { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1.8rem; }
+  .ci-icon { width: 44px; height: 44px; min-width: 44px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+  .ci-label { font-size: 0.73rem; color: rgba(255,255,255,0.65); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .ci-val { font-size: 0.95rem; color: white; font-weight: 500; margin-top: 2px; }
+  .contact-form-card { background: white; border-radius: var(--r-lg); border: 1px solid var(--border); padding: 2.5rem; }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-field { margin-bottom: 1.1rem; }
+
+  /* FOOTER */
+  .footer { background: var(--ink); color: rgba(255,255,255,0.75); padding: 5rem 8% 2rem; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; padding-bottom: 3rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .footer-brand { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: white; font-weight: 700; margin-bottom: 1rem; }
+  .footer-brand span { color: var(--sky-mid); }
+  .footer-desc { font-size: 0.84rem; line-height: 1.75; color: rgba(255,255,255,0.45); max-width: 270px; }
+  .footer-col h5 { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.35); margin-bottom: 1.2rem; font-weight: 600; }
+  .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.65rem; }
+  .footer-col ul li { font-size: 0.84rem; color: rgba(255,255,255,0.6); cursor: pointer; transition: color 0.2s; }
+  .footer-col ul li:hover { color: white; }
+  .footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 2rem; font-size: 0.78rem; color: rgba(255,255,255,0.25); flex-wrap: wrap; gap: 0.5rem; }
+
+  /* RESPONSIVE */
+  @media(max-width:1024px){
+    .dept-grid { grid-template-columns: repeat(2,1fr); }
+    .doc-grid { grid-template-columns: repeat(2,1fr); }
+    .values-grid { grid-template-columns: repeat(2,1fr); }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media(max-width:900px){
+    .nav-links,.nav-cta { display:none; }
+    .ham { display:flex; }
+    .mob-nav { display:flex; }
+    .hero { grid-template-columns:1fr; min-height:auto; }
+    .hero-left { padding: 3rem 6% 2rem 6%; order:1; }
+    .hero-right { min-height:400px; order:2; }
+    .contact-grid { grid-template-columns:1fr; }
+  }
+  @media(max-width:640px){
+    .dept-grid { grid-template-columns:1fr; }
+    .doc-grid { grid-template-columns:1fr 1fr; }
+    .values-grid { grid-template-columns:1fr 1fr; }
+    .footer-grid { grid-template-columns:1fr; gap:2rem; }
+    .form-grid-2 { grid-template-columns:1fr; }
+    .hero-stat-row { grid-template-columns:1fr 1fr; }
+    .hfc-top { top:8%; right:3%; }
+    .hfc-bot { bottom:8%; left:3%; }
+  }
+  @media(max-width:480px){
+    .doc-grid { grid-template-columns:1fr; }
+    .hero-float-card { padding:0.7rem 0.9rem; }
+    .hfc-val { font-size:0.85rem; }
+  }
+
+  /* PAGE-SPECIFIC PADDING */
+  .page-body { padding: 5rem 8%; }
+  .page-hero {
+    padding-top: 70px; min-height: 42vh;
+    display: flex; align-items: flex-end; padding-bottom: 3.5rem;
+    padding-left: 8%; padding-right: 8%;
+    position: relative; overflow: hidden;
+  }
+  .page-hero-bg { position:absolute; inset:0; z-index:0; }
+  .page-hero-content { position:relative; z-index:1; }
+
+  /* Divider */
+  .divider { height:1px; background:var(--border); margin: 3.5rem 0; }
+
+  /* Stats bar */
+  .stats-bar { display:grid; grid-template-columns:repeat(4,1fr); gap:0; background:var(--sky); border-radius:var(--r-lg); overflow:hidden; }
+  .stats-bar-item { padding:2rem 2rem; text-align:center; border-right:1px solid rgba(255,255,255,0.15); }
+  .stats-bar-item:last-child { border-right:none; }
+  .stats-bar-num { font-family:'Playfair Display',serif; font-size:2.5rem; font-weight:700; color:white; }
+  .stats-bar-lbl { font-size:0.8rem; color:rgba(255,255,255,0.7); margin-top:4px; font-weight:400; }
+  @media(max-width:640px){
+    .stats-bar { grid-template-columns:1fr 1fr; }
+    .stats-bar-item { border-right:none; border-bottom:1px solid rgba(255,255,255,0.12); }
+    .stats-bar-item:nth-child(odd){ border-right:1px solid rgba(255,255,255,0.12); }
+  }
+
+  /* News cards */
+  .news-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.5rem; }
+  .news-card { background:white; border-radius:var(--r-md); border:1px solid var(--border); overflow:hidden; transition:all 0.3s; cursor:pointer; }
+  .news-card:hover { box-shadow:var(--shadow-md); transform:translateY(-4px); }
+  .news-img { height:180px; display:flex; align-items:center; justify-content:center; font-size:3rem; }
+  .news-body { padding:1.4rem; }
+  .news-meta { font-size:0.74rem; color:var(--ink-light); margin-bottom:0.6rem; }
+  .news-title { font-family:'Playfair Display',serif; font-size:1.05rem; font-weight:600; line-height:1.4; margin-bottom:0.5rem; }
+  .news-excerpt { font-size:0.82rem; color:var(--ink-light); line-height:1.65; }
+  @media(max-width:900px){ .news-grid{grid-template-columns:1fr 1fr;} }
+  @media(max-width:600px){ .news-grid{grid-template-columns:1fr;} }
+
+  /* Trust badges */
+  .trust-row { display:flex; align-items:center; gap:2.5rem; flex-wrap:wrap; padding:2rem 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+  .trust-item { font-family:'Playfair Display',serif; font-size:0.95rem; font-weight:600; color:var(--sand3); }
+  .trust-sep { color:var(--border); }
+
+  /* Emergency banner */
+  .emerg-banner { background:var(--terra); color:white; padding:0.75rem 8%; display:flex; align-items:center; justify-content:space-between; font-size:0.85rem; flex-wrap:wrap; gap:0.5rem; }
+  .emerg-left { display:flex; align-items:center; gap:0.6rem; font-weight:500; }
+  .emerg-num { font-family:'Playfair Display',serif; font-size:1.1rem; font-weight:700; }
+
+  /* Testimonial slider */
+  .testi-track { display:grid; grid-template-columns:repeat(3,1fr); gap:1.5rem; }
+  .testi-card { background:white; border-radius:var(--r-md); border:1px solid var(--border); padding:2rem; }
+  .testi-quote { font-size:2rem; color:var(--sky-mid); line-height:1; margin-bottom:0.8rem; }
+  .testi-text { font-size:0.88rem; color:var(--ink-mid); line-height:1.75; font-style:italic; margin-bottom:1.4rem; }
+  .testi-author { display:flex; align-items:center; gap:0.75rem; }
+  .testi-av { width:40px; height:40px; border-radius:50%; background:var(--sky-light); display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
+  .testi-name { font-size:0.88rem; font-weight:600; }
+  .testi-role { font-size:0.76rem; color:var(--ink-light); }
+  @media(max-width:900px){ .testi-track{grid-template-columns:1fr 1fr;} }
+  @media(max-width:580px){ .testi-track{grid-template-columns:1fr;} }
+`;
+
+/* ─── HOOKS ─── */
+function useScrolled() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const h = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", h);
+    return () => window.removeEventListener("scroll", h);
+  }, []);
+  return scrolled;
+}
+
+function useReveal() {
+  useEffect(() => {
+    const els = document.querySelectorAll(".reveal");
+    const obs = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("in"); }),
+      { threshold: 0.1 }
+    );
+    els.forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+}
+
+/* ─── NAV ─── */
+function Nav({ page, setPage }) {
+  const scrolled = useScrolled();
+  const [open, setOpen] = useState(false);
+  const pages = ["Home","Departments","Doctors","About","Contact"];
+
+  const go = p => { setPage(p); setOpen(false); window.scrollTo(0,0); };
+
+  return (
+    <>
+      <nav className={`nav${scrolled?" scrolled":""}`}>
+        <div className="nav-logo-wrap" onClick={() => go("Home")}>
+          <div className="nav-logo-icon">A+</div>
+          <div className="nav-logo-text">Aurora <span>Hospital</span></div>
+        </div>
+        <ul className="nav-links">
+          {pages.map(p => (
+            <li key={p}>
+              <button className={`nav-link${page===p?" active":""}`} onClick={() => go(p)}>{p}</button>
+            </li>
+          ))}
+        </ul>
+        <button className="btn btn-sky nav-cta" onClick={() => go("Contact")}>Book Appointment</button>
+        <button className={`ham${open?" open":""}`} onClick={() => setOpen(!open)}>
+          <span/><span/><span/>
+        </button>
+      </nav>
+      <div className={`mob-nav${open?" open":""}`}>
+        {pages.map(p => (
+          <button key={p} className={`mob-nav-link${page===p?" active":""}`} onClick={() => go(p)}>{p}</button>
+        ))}
+        <button className="btn btn-sky mob-nav-cta" onClick={() => go("Contact")}>Book Appointment</button>
+      </div>
+    </>
+  );
+}
+
+/* ─── EMERGENCY BANNER ─── */
+function EmergBanner() {
+  return (
+    <div className="emerg-banner" style={{marginTop:70}}>
+      <div className="emerg-left">
+        <span>🚨</span>
+        <span>24/7 Emergency Services Available</span>
+        <span className="emerg-num">+977 01-5678900</span>
+      </div>
+      <span style={{fontSize:"0.8rem",opacity:0.85}}>Ambulance · ICU · Trauma Care · All Days</span>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   PAGE: HOME
+═══════════════════════════════════════ */
+function HomePage({ setPage }) {
+  useReveal();
+  return (
+    <div className="page-enter">
+      <EmergBanner />
+
+      {/* HERO */}
+      <section className="hero">
+        <div className="hero-left">
+          <div className="tag" style={{marginBottom:"1.5rem"}}>Est. 1998 · Kathmandu</div>
+          <h1 className="section-heading" style={{fontSize:"clamp(2.5rem,5vw,4.2rem)",marginBottom:"1.4rem"}}>
+            Advanced Care.<br/><em>Human Touch.</em>
+          </h1>
+          <p className="section-sub" style={{marginBottom:"2.2rem"}}>
+            Aurora Hospital stands at the forefront of modern medicine — blending cutting-edge technology with compassionate, patient-first care for over 25 years.
+          </p>
+          <div style={{display:"flex",gap:"1rem",flexWrap:"wrap",marginBottom:"3rem"}}>
+            <button className="btn btn-sky" onClick={() => setPage("Contact")}>Book Appointment →</button>
+            <button className="btn btn-outline" onClick={() => setPage("Departments")}>View Departments</button>
+          </div>
+          <div className="trust-row">
+            <span className="trust-item" style={{color:"var(--ink-light)"}}>JCI Accredited</span>
+            <span className="trust-sep">·</span>
+            <span className="trust-item" style={{color:"var(--ink-light)"}}>NABH Certified</span>
+            <span className="trust-sep">·</span>
+            <span className="trust-item" style={{color:"var(--ink-light)"}}>ISO 9001</span>
+            <span className="trust-sep">·</span>
+            <span className="trust-item" style={{color:"var(--ink-light)"}}>WHO Partner</span>
+          </div>
+        </div>
+
+        <div className="hero-right">
+          <div className="hero-right-bg"/>
+          <div className="hero-right-pattern"/>
+          <div className="hero-float-card hfc-top">
+            <div className="hfc-label">Current Status</div>
+            <div className="hfc-val"><span className="dot-live"/>ICU Beds Available</div>
+            <div className="hfc-sub">12 beds · OT Suite A open</div>
+          </div>
+          <div className="hero-visual">
+            <div className="hero-card-main">
+              <div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.7)",fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:"0.8rem"}}>Today's Overview</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"2.5rem",fontWeight:700,color:"white",lineHeight:1}}>247</div>
+              <div style={{fontSize:"0.82rem",color:"rgba(255,255,255,0.65)",marginTop:"4px"}}>Patients Attended Today</div>
+              <div className="hero-stat-row">
+                <div className="hero-stat-box"><div className="hero-stat-num">98%</div><div className="hero-stat-lbl">Satisfaction</div></div>
+                <div className="hero-stat-box"><div className="hero-stat-num">18m</div><div className="hero-stat-lbl">Avg. Wait Time</div></div>
+                <div className="hero-stat-box"><div className="hero-stat-num">86</div><div className="hero-stat-lbl">Doctors On Duty</div></div>
+                <div className="hero-stat-box"><div className="hero-stat-num">24/7</div><div className="hero-stat-lbl">Emergency</div></div>
+              </div>
+            </div>
+          </div>
+          <div className="hero-float-card hfc-bot">
+            <div className="hfc-label">Next Available Slot</div>
+            <div className="hfc-val">Today 4:30 PM</div>
+            <div className="hfc-sub">Dr. Arjun Thapa · Cardiology</div>
+          </div>
+        </div>
+      </section>
+
+      {/* STATS BAR */}
+      <div style={{padding:"0 8%",marginTop:"4rem"}}>
+        <div className="stats-bar reveal">
+          {[["500+","Specialist Doctors"],["1,200+","Beds"],["50k+","Patients/Year"],["25+","Years of Excellence"]].map(([n,l])=>(
+            <div className="stats-bar-item" key={l}>
+              <div className="stats-bar-num">{n}</div>
+              <div className="stats-bar-lbl">{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* DEPARTMENTS PREVIEW */}
+      <div className="page-body" style={{paddingTop:"4rem",paddingBottom:"3rem"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:"2.5rem",flexWrap:"wrap",gap:"1rem"}}>
+          <div>
+            <span className="tag" style={{marginBottom:"0.8rem"}}>Our Specialties</span>
+            <h2 className="section-heading reveal">World-Class <em>Departments</em></h2>
+          </div>
+          <button className="btn btn-outline reveal" onClick={() => { setPage("Departments"); window.scrollTo(0,0); }}>View All →</button>
+        </div>
+        <div className="dept-grid">
+          {[
+            {icon:"❤️",bg:"#fee2e2",name:"Cardiology",desc:"Advanced cardiac care with catheterization labs, echo suites, and 24/7 cardiac ICU.",n:24},
+            {icon:"🧠",bg:"#ede9fe",name:"Neurosciences",desc:"Comprehensive neurological care from epilepsy to complex brain and spine surgeries.",n:18},
+            {icon:"🦴",bg:"#fef3c7",name:"Orthopedics",desc:"Joint replacement, sports medicine, and minimally invasive spine procedures.",n:22},
+            {icon:"👶",bg:"#d1fae5",name:"Neonatal Care",desc:"State-of-the-art NICU with round-the-clock pediatric intensivists.",n:15},
+            {icon:"🔬",bg:"#e0f2fe",name:"Oncology",desc:"Multidisciplinary cancer care including immunotherapy and precision medicine.",n:20},
+            {icon:"👁️",bg:"#fce7f3",name:"Ophthalmology",desc:"Advanced eye care from LASIK to retinal surgeries with robotic assistance.",n:12},
+          ].map((d,i)=>(
+            <div className="dept-card reveal" key={d.name} style={{animationDelay:`${i*0.07}s`}} onClick={()=>{setPage("Departments");window.scrollTo(0,0);}}>
+              <div className="dept-icon" style={{background:d.bg}}>{d.icon}</div>
+              <div className="dept-name">{d.name}</div>
+              <div className="dept-desc">{d.desc}</div>
+              <div className="dept-count">👨‍⚕️ {d.n} Specialists</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* DOCTORS PREVIEW */}
+      <div style={{background:"var(--sand2)",padding:"4rem 8%"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:"2.5rem",flexWrap:"wrap",gap:"1rem"}}>
+          <div>
+            <span className="tag terra" style={{marginBottom:"0.8rem"}}>Our Team</span>
+            <h2 className="section-heading reveal">Meet Our <span className="terra">Physicians</span></h2>
+          </div>
+          <button className="btn btn-outline reveal" onClick={()=>{setPage("Doctors");window.scrollTo(0,0);}}>All Doctors →</button>
+        </div>
+        <div className="doc-grid">
+          {[
+            {emoji:"👨‍⚕️",cls:"doc-d1",name:"Dr. Arjun Thapa",spec:"Senior Cardiologist",exp:"22 yrs",stars:"★★★★★",rating:"4.9"},
+            {emoji:"👩‍⚕️",cls:"doc-d2",name:"Dr. Sunita Rai",spec:"Chief Neurologist",exp:"18 yrs",stars:"★★★★★",rating:"5.0"},
+            {emoji:"👨‍⚕️",cls:"doc-d3",name:"Dr. Bikash Shrestha",spec:"Orthopedic Surgeon",exp:"20 yrs",stars:"★★★★★",rating:"4.8"},
+          ].map((d,i)=>(
+            <div className="doc-card reveal" key={d.name} style={{animationDelay:`${i*0.1}s`}}>
+              <div className={`doc-photo ${d.cls}`}>{d.emoji}</div>
+              <div className="doc-body">
+                <div className="doc-name">{d.name}</div>
+                <div className="doc-spec">{d.spec}</div>
+                <div className="doc-exp">{d.exp} experience</div>
+                <div className="doc-stars">{d.stars} <span style={{color:"var(--ink-light)",fontSize:"0.8rem"}}>{d.rating} (200+ reviews)</span></div>
+                <div className="doc-avail"><span className="dot-live"/>Available Today</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* TESTIMONIALS */}
+      <div className="page-body" style={{paddingTop:"4rem",paddingBottom:"4rem"}}>
+        <div style={{textAlign:"center",marginBottom:"2.5rem"}}>
+          <span className="tag sage" style={{marginBottom:"0.8rem"}}>Patient Stories</span>
+          <h2 className="section-heading reveal">What Our Patients <em>Say</em></h2>
+        </div>
+        <div className="testi-track">
+          {[
+            {q:"The care I received after my bypass surgery was truly exceptional. The ICU team at Aurora was attentive, skilled, and reassuring every step of the way.","name":"Ramesh Adhikari","role":"Cardiac Patient","av":"👨"},
+            {q:"Dr. Rai's team managed my mother's stroke recovery with precision and compassion. The rehab program changed her life. We are forever grateful.","name":"Priya Bajracharya","role":"Family Member","av":"👩"},
+            {q:"Aurora's oncology department gave me hope when I needed it most. The multidisciplinary approach to my treatment was thorough and genuinely world-class.","name":"Sanjay Lama","role":"Cancer Survivor","av":"🧑"},
+          ].map((t,i)=>(
+            <div className="testi-card reveal" key={i} style={{animationDelay:`${i*0.1}s`}}>
+              <div className="testi-quote">"</div>
+              <p className="testi-text">{t.q}</p>
+              <div className="testi-author">
+                <div className="testi-av">{t.av}</div>
+                <div><div className="testi-name">{t.name}</div><div className="testi-role">{t.role}</div></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* NEWS */}
+      <div style={{background:"var(--sand2)",padding:"4rem 8%"}}>
+        <div style={{textAlign:"center",marginBottom:"2.5rem"}}>
+          <span className="tag" style={{marginBottom:"0.8rem"}}>Latest</span>
+          <h2 className="section-heading reveal">News & <em>Health Tips</em></h2>
+        </div>
+        <div className="news-grid">
+          {[
+            {emoji:"🏥",bg:"#e8f2f9",date:"March 10, 2026",title:"Aurora Launches Nepal's First Robotic Surgery Unit",text:"Our new robotic surgery suite enables minimally invasive procedures with unprecedented precision."},
+            {emoji:"💉",bg:"#f5e8dc",date:"Feb 28, 2026",title:"Free Heart Screening Camp this April",text:"Join our cardiology team for complimentary ECG and blood pressure screening across Kathmandu."},
+            {emoji:"🧬",bg:"#e4ede4",date:"Feb 15, 2026",title:"Aurora Joins WHO's Global Cancer Research Network",text:"Our oncology department partners with leading international institutions for cutting-edge clinical trials."},
+          ].map((n,i)=>(
+            <div className="news-card reveal" key={i} style={{animationDelay:`${i*0.1}s`}}>
+              <div className="news-img" style={{background:n.bg}}>{n.emoji}</div>
+              <div className="news-body">
+                <div className="news-meta">{n.date}</div>
+                <div className="news-title">{n.title}</div>
+                <div className="news-excerpt">{n.text}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CTA BAND */}
+      <div style={{background:"var(--sky)",padding:"4rem 8%",textAlign:"center"}}>
+        <div className="reveal">
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(1.8rem,3vw,3rem)",fontWeight:600,color:"white",marginBottom:"1rem"}}>
+            Ready to Experience <em style={{fontStyle:"italic",opacity:0.75}}>Better Healthcare?</em>
+          </div>
+          <p style={{color:"rgba(255,255,255,0.72)",maxWidth:520,margin:"0 auto 2rem",fontSize:"1rem",lineHeight:1.7}}>
+            Book an appointment with one of our 500+ specialists today. In-person and telemedicine options available.
+          </p>
+          <div style={{display:"flex",gap:"1rem",justifyContent:"center",flexWrap:"wrap"}}>
+            <button className="btn btn-terra" onClick={()=>{setPage("Contact");window.scrollTo(0,0);}}>Book Appointment →</button>
+            <button className="btn btn-outline-sand">Call +977 01-5678900</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   PAGE: DEPARTMENTS
+═══════════════════════════════════════ */
+function DepartmentsPage() {
+  useReveal();
+  const depts = [
+    {icon:"❤️",bg:"#fee2e2",name:"Cardiology",desc:"Our cardiology center offers a full continuum of cardiovascular care including preventive cardiology, interventional procedures, electrophysiology, and cardiac rehabilitation.",n:24,beds:80,ots:4},
+    {icon:"🧠",bg:"#ede9fe",name:"Neurosciences",desc:"A dedicated center for brain, spine, and nervous system disorders. Services include epilepsy management, neuro-oncology, movement disorders, and complex neurosurgery.",n:18,beds:60,ots:3},
+    {icon:"🦴",bg:"#fef3c7",name:"Orthopedics & Spine",desc:"Comprehensive bone and joint care from sports injuries to complex spinal reconstruction with our team of internationally trained surgeons.",n:22,beds:100,ots:5},
+    {icon:"👶",bg:"#d1fae5",name:"Neonatology & Pediatrics",desc:"Our Level III NICU with specialized pediatric intensivists provides care for premature babies and critically ill children around the clock.",n:15,beds:40,ots:2},
+    {icon:"🔬",bg:"#e0f2fe",name:"Oncology & Cancer Care",desc:"Multidisciplinary tumor boards, immunotherapy, targeted therapy, radiation oncology, and compassionate palliative care under one roof.",n:20,beds:90,ots:3},
+    {icon:"👁️",bg:"#fce7f3",name:"Ophthalmology",desc:"From routine vision care to advanced vitreoretinal surgery, our eye center uses the latest phacoemulsification and LASIK platforms.",n:12,beds:20,ots:2},
+    {icon:"🫁",bg:"#ecfdf5",name:"Pulmonology",desc:"Diagnosis and management of respiratory conditions including asthma, COPD, sleep apnea, and interstitial lung disease.",n:10,beds:35,ots:1},
+    {icon:"🩺",bg:"#fff7ed",name:"Internal Medicine",desc:"Comprehensive general medicine for adults managing complex multi-system diseases with a patient-centered approach.",n:30,beds:120,ots:0},
+    {icon:"🧬",bg:"#f0fdf4",name:"Genetics & Genomics",desc:"Nepal's first clinical genomics unit offering diagnostic genetic testing, carrier screening, and personalized medicine consultations.",n:6,beds:10,ots:1},
+  ];
+  return (
+    <div className="page-enter">
+      <div className="page-hero" style={{background:"linear-gradient(135deg,#4a7fa5,#2d5470)",minHeight:"38vh"}}>
+        <div className="page-hero-bg"><div className="hero-right-pattern"/></div>
+        <div className="page-hero-content">
+          <span className="tag" style={{marginBottom:"1rem",background:"rgba(255,255,255,0.18)",color:"white"}}>Our Specialties</span>
+          <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(2rem,4vw,3.5rem)",fontWeight:600,color:"white",lineHeight:1.15}}>
+            World-Class <em style={{fontStyle:"italic",opacity:0.75}}>Departments</em>
+          </h1>
+          <p style={{color:"rgba(255,255,255,0.7)",marginTop:"1rem",maxWidth:500,fontSize:"1rem",lineHeight:1.7}}>
+            Over 30 clinical departments staffed by internationally trained specialists dedicated to excellence.
+          </p>
+        </div>
+      </div>
+      <div className="page-body">
+        <div className="dept-grid">
+          {depts.map((d,i)=>(
+            <div className="dept-card reveal" key={d.name} style={{animationDelay:`${(i%3)*0.08}s`}}>
+              <div className="dept-icon" style={{background:d.bg}}>{d.icon}</div>
+              <div className="dept-name">{d.name}</div>
+              <div className="dept-desc">{d.desc}</div>
+              <div style={{display:"flex",gap:"1.2rem",marginTop:"1.2rem",flexWrap:"wrap"}}>
+                <div className="dept-count">👨‍⚕️ {d.n} Specialists</div>
+                {d.beds>0&&<div className="dept-count" style={{color:"var(--terra)"}}>🛏 {d.beds} Beds</div>}
+                {d.ots>0&&<div className="dept-count" style={{color:"var(--sage)"}}>🔧 {d.ots} OTs</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   PAGE: DOCTORS
+═══════════════════════════════════════ */
+function DoctorsPage({ setPage }) {
+  useReveal();
+  const [filter, setFilter] = useState("All");
+  const specs = ["All","Cardiology","Neurology","Orthopedics","Oncology","Pediatrics","General"];
+  const docs = [
+    {emoji:"👨‍⚕️",cls:"doc-d1",name:"Dr. Arjun Thapa",spec:"Cardiology",title:"Senior Cardiologist",exp:"22 yrs",stars:4.9,reviews:312},
+    {emoji:"👩‍⚕️",cls:"doc-d2",name:"Dr. Sunita Rai",spec:"Neurology",title:"Chief Neurologist",exp:"18 yrs",stars:5.0,reviews:280},
+    {emoji:"👨‍⚕️",cls:"doc-d3",name:"Dr. Bikash Shrestha",spec:"Orthopedics",title:"Orthopedic Surgeon",exp:"20 yrs",stars:4.8,reviews:415},
+    {emoji:"👩‍⚕️",cls:"doc-d4",name:"Dr. Anita Gurung",spec:"Oncology",title:"Medical Oncologist",exp:"16 yrs",stars:4.9,reviews:190},
+    {emoji:"👨‍⚕️",cls:"doc-d5",name:"Dr. Rajan Pradhan",spec:"Pediatrics",title:"Consultant Pediatrician",exp:"14 yrs",stars:4.7,reviews:220},
+    {emoji:"👩‍⚕️",cls:"doc-d6",name:"Dr. Meena Tamang",spec:"Cardiology",title:"Interventional Cardiologist",exp:"12 yrs",stars:4.8,reviews:165},
+    {emoji:"👨‍⚕️",cls:"doc-d1",name:"Dr. Suresh Karki",spec:"General",title:"General Physician",exp:"25 yrs",stars:4.9,reviews:580},
+    {emoji:"👩‍⚕️",cls:"doc-d3",name:"Dr. Kabita Lama",spec:"Neurology",title:"Neuro-Intensivist",exp:"10 yrs",stars:4.7,reviews:140},
+    {emoji:"👨‍⚕️",cls:"doc-d4",name:"Dr. Deepak Joshi",spec:"Orthopedics",title:"Spine Surgeon",exp:"17 yrs",stars:4.8,reviews:260},
+  ];
+  const filtered = filter==="All" ? docs : docs.filter(d=>d.spec===filter);
+  return (
+    <div className="page-enter">
+      <div className="page-hero" style={{background:"linear-gradient(135deg,#c47a4a,#a8623a)",minHeight:"38vh"}}>
+        <div className="page-hero-bg"><div className="hero-right-pattern"/></div>
+        <div className="page-hero-content">
+          <span className="tag" style={{background:"rgba(255,255,255,0.18)",color:"white",marginBottom:"1rem"}}>Our Physicians</span>
+          <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(2rem,4vw,3.5rem)",fontWeight:600,color:"white",lineHeight:1.15}}>
+            Meet Our <em style={{fontStyle:"italic",opacity:0.75}}>Expert Team</em>
+          </h1>
+          <p style={{color:"rgba(255,255,255,0.7)",marginTop:"1rem",maxWidth:500,fontSize:"1rem",lineHeight:1.7}}>
+            500+ board-certified specialists across 30 departments — trained at leading institutions worldwide.
+          </p>
+        </div>
+      </div>
+
+      <div className="page-body">
+        {/* Filter tabs */}
+        <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap",marginBottom:"2.5rem"}}>
+          {specs.map(s=>(
+            <button key={s} onClick={()=>setFilter(s)}
+              style={{padding:"0.5rem 1.2rem",border:`1.5px solid ${filter===s?"var(--sky)":"var(--border)"}`,borderRadius:"50px",
+                background:filter===s?"var(--sky)":"white",color:filter===s?"white":"var(--ink-mid)",
+                cursor:"pointer",fontFamily:"'Outfit',sans-serif",fontSize:"0.84rem",fontWeight:500,transition:"all 0.2s"}}>
+              {s}
+            </button>
+          ))}
+        </div>
+
+        <div className="doc-grid">
+          {filtered.map((d,i)=>(
+            <div className="doc-card reveal" key={d.name} style={{animationDelay:`${(i%3)*0.08}s`}}>
+              <div className={`doc-photo ${d.cls}`} style={{fontSize:"4rem"}}>{d.emoji}</div>
+              <div className="doc-body">
+                <div className="doc-name">{d.name}</div>
+                <div className="doc-spec">{d.title}</div>
+                <div className="doc-exp">{d.exp} experience · {d.spec}</div>
+                <div className="doc-stars">{"★".repeat(Math.floor(d.stars))}{"☆".repeat(5-Math.floor(d.stars))} <span style={{color:"var(--ink-light)",fontSize:"0.78rem"}}>{d.stars} ({d.reviews} reviews)</span></div>
+                <div style={{display:"flex",gap:"0.7rem",marginTop:"1rem",flexWrap:"wrap"}}>
+                  <button className="btn btn-sky" style={{padding:"0.55rem 1.2rem",fontSize:"0.8rem",borderRadius:"8px"}} onClick={()=>{setPage("Contact");window.scrollTo(0,0);}}>Book →</button>
+                  <div className="doc-avail"><span className="dot-live"/>Available</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   PAGE: ABOUT
+═══════════════════════════════════════ */
+function AboutPage() {
+  useReveal();
+  return (
+    <div className="page-enter">
+      <div className="about-hero">
+        <div className="about-pattern"/>
+        <div style={{position:"relative",zIndex:1,textAlign:"center",maxWidth:700}}>
+          <span className="tag" style={{background:"rgba(255,255,255,0.18)",color:"white",marginBottom:"1.2rem"}}>Our Story</span>
+          <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(2.2rem,4vw,4rem)",fontWeight:600,color:"white",lineHeight:1.15,marginBottom:"1.2rem"}}>
+            25 Years of <em style={{fontStyle:"italic",opacity:0.75}}>Healing</em> Nepal
+          </h1>
+          <p style={{color:"rgba(255,255,255,0.72)",fontSize:"1.05rem",lineHeight:1.8}}>
+            Founded in 1998, Aurora Hospital began as a 50-bed community hospital and has grown into a 1,200-bed tertiary care institution — always guided by the belief that every patient deserves world-class care.
+          </p>
+        </div>
+      </div>
+
+      {/* MISSION / VISION */}
+      <div className="page-body">
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"2rem",marginBottom:"4rem"}}>
+          {[
+            {tag:"Mission",title:"To Heal, To Comfort, To Educate",text:"We are committed to delivering compassionate, evidence-based healthcare that improves the health and wellbeing of every individual and community we serve."},
+            {tag:"Vision",title:"Nepal's Most Trusted Healthcare Institution",text:"To be the benchmark of medical excellence in South Asia — pioneering research, education, and patient-centred care that transforms lives."},
+          ].map(m=>(
+            <div key={m.tag} className="card reveal" style={{padding:"2.5rem"}}>
+              <span className="tag" style={{marginBottom:"1rem"}}>{m.tag}</span>
+              <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.5rem",fontWeight:600,marginBottom:"0.8rem"}}>{m.title}</h3>
+              <p style={{fontSize:"0.9rem",color:"var(--ink-light)",lineHeight:1.75}}>{m.text}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* VALUES */}
+        <div style={{textAlign:"center",marginBottom:"2.5rem"}}>
+          <span className="tag sage" style={{marginBottom:"0.8rem"}}>What We Stand For</span>
+          <h2 className="section-heading reveal">Our Core <em>Values</em></h2>
+        </div>
+        <div className="values-grid" style={{marginBottom:"4rem"}}>
+          {[
+            {icon:"🤝",name:"Compassion",desc:"We treat every patient with empathy, dignity, and genuine human kindness."},
+            {icon:"🔬",name:"Innovation",desc:"Continuously adopting the latest medical advances to improve patient outcomes."},
+            {icon:"⭐",name:"Excellence",desc:"Uncompromising quality in clinical care, safety, and patient experience."},
+            {icon:"🌍",name:"Integrity",desc:"Transparent, ethical practice guided by honesty and accountability at every level."},
+          ].map(v=>(
+            <div className="val-card reveal" key={v.name}>
+              <div className="val-icon">{v.icon}</div>
+              <div className="val-name">{v.name}</div>
+              <div className="val-desc">{v.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="divider"/>
+
+        {/* TIMELINE */}
+        <div style={{textAlign:"center",marginBottom:"2.5rem"}}>
+          <span className="tag terra" style={{marginBottom:"0.8rem"}}>Our Journey</span>
+          <h2 className="section-heading reveal">A Legacy of <span className="terra">Excellence</span></h2>
+        </div>
+        <div style={{maxWidth:700,margin:"0 auto"}}>
+          <div className="timeline">
+            {[
+              {year:"1998",icon:"🏥",title:"Aurora Hospital Founded",desc:"Opened with 50 beds and a team of 12 dedicated physicians in Durbarmarg, Kathmandu."},
+              {year:"2004",icon:"❤️",title:"Cardiac Centre Established",desc:"Launched Nepal's first dedicated cardiac catheterization laboratory for interventional cardiology."},
+              {year:"2010",icon:"🧠",title:"Neuroscience Institute Opened",desc:"Expanded to include a state-of-the-art neurosurgery and stroke unit with 24/7 neuro ICU."},
+              {year:"2016",icon:"🔬",title:"Oncology Centre of Excellence",desc:"Launched comprehensive cancer care with radiation therapy, bone marrow transplant, and immunotherapy."},
+              {year:"2020",icon:"🤖",title:"Robotic Surgery Unit",desc:"Introduced Nepal's first Da Vinci robotic surgery system for minimally invasive procedures."},
+              {year:"2026",icon:"🧬",title:"Clinical Genomics Lab",desc:"Opened South Asia's most advanced hospital-based genetic testing and precision medicine facility."},
+            ].map((t,i)=>(
+              <div className="tl-item reveal" key={t.year} style={{animationDelay:`${i*0.1}s`}}>
+                <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"8px"}}>
+                  <div className="tl-dot">{t.icon}</div>
+                </div>
+                <div style={{paddingTop:"0.6rem"}}>
+                  <div className="tl-year">{t.year}</div>
+                  <div className="tl-title">{t.title}</div>
+                  <div className="tl-desc">{t.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="divider"/>
+
+        {/* ACCREDITATIONS */}
+        <div style={{textAlign:"center",marginBottom:"2rem"}}>
+          <h2 className="section-heading reveal">Accreditations & <em>Awards</em></h2>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"1rem"}}>
+          {[
+            {icon:"🏆",title:"JCI Accreditation","sub":"Joint Commission International"},
+            {icon:"🎖️",title:"NABH Certified","sub":"National Accreditation Board"},
+            {icon:"🌐",title:"WHO Partner","sub":"World Health Organization"},
+            {icon:"⭐",title:"Best Hospital Award","sub":"Nepal Medical Association 2025"},
+          ].map(a=>(
+            <div key={a.title} className="card reveal" style={{padding:"1.6rem",textAlign:"center"}}>
+              <div style={{fontSize:"2rem",marginBottom:"0.6rem"}}>{a.icon}</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1rem",fontWeight:600,marginBottom:"0.3rem"}}>{a.title}</div>
+              <div style={{fontSize:"0.76rem",color:"var(--ink-light)"}}>{a.sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   PAGE: CONTACT / BOOK
+═══════════════════════════════════════ */
+function ContactPage() {
+  useReveal();
+  const [sent, setSent] = useState(false);
+  return (
+    <div className="page-enter">
+      <div className="page-hero" style={{background:"linear-gradient(135deg,#5a7a5c,#3d5c3f)",minHeight:"38vh"}}>
+        <div className="page-hero-bg"><div className="hero-right-pattern"/></div>
+        <div className="page-hero-content">
+          <span className="tag" style={{background:"rgba(255,255,255,0.18)",color:"white",marginBottom:"1rem"}}>Get In Touch</span>
+          <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(2rem,4vw,3.5rem)",fontWeight:600,color:"white",lineHeight:1.15}}>
+            Book an <em style={{fontStyle:"italic",opacity:0.75}}>Appointment</em>
+          </h1>
+          <p style={{color:"rgba(255,255,255,0.7)",marginTop:"1rem",maxWidth:500,lineHeight:1.7}}>
+            Fill out the form and our team will confirm your slot within 2 hours. Telemedicine available.
+          </p>
+        </div>
+      </div>
+
+      <div className="page-body">
+        <div className="contact-grid">
+          {/* Info Card */}
+          <div>
+            <div className="contact-info-card reveal">
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.5rem",fontWeight:600,color:"white",marginBottom:"1.8rem"}}>Contact Information</div>
+              {[
+                {icon:"📞",label:"Phone",val:"+977 01-5678900 / 901"},
+                {icon:"🚨",label:"Emergency",val:"+977 01-5678999 (24/7)"},
+                {icon:"📧",label:"Email",val:"appointments@aurorahospital.com.np"},
+                {icon:"📍",label:"Address",val:"Maharajgunj, Kathmandu, Nepal 44600"},
+                {icon:"🕐",label:"OPD Hours",val:"Sun–Fri 8AM–8PM · Sat 8AM–4PM"},
+              ].map(c=>(
+                <div className="ci-item" key={c.label}>
+                  <div className="ci-icon">{c.icon}</div>
+                  <div><div className="ci-label">{c.label}</div><div className="ci-val">{c.val}</div></div>
+                </div>
+              ))}
+              <div style={{marginTop:"1.5rem",paddingTop:"1.5rem",borderTop:"1px solid rgba(255,255,255,0.15)"}}>
+                <div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.55)",marginBottom:"0.8rem",fontWeight:600,letterSpacing:"0.05em",textTransform:"uppercase"}}>Find Us</div>
+                <div style={{background:"rgba(255,255,255,0.1)",borderRadius:"var(--r-md)",height:120,display:"flex",alignItems:"center",justifyContent:"center",color:"rgba(255,255,255,0.5)",fontSize:"0.85rem",border:"1px solid rgba(255,255,255,0.15)"}}>📍 Maharajgunj, Kathmandu</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Form */}
+          <div className="contact-form-card reveal">
+            {sent ? (
+              <div style={{textAlign:"center",padding:"3rem 1rem"}}>
+                <div style={{fontSize:"3rem",marginBottom:"1rem"}}>✅</div>
+                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.6rem",marginBottom:"0.8rem"}}>Appointment Requested!</h3>
+                <p style={{color:"var(--ink-light)",lineHeight:1.7}}>Our team will call you within 2 hours to confirm your slot. Thank you for choosing Aurora Hospital.</p>
+                <button className="btn btn-sky" style={{marginTop:"1.5rem"}} onClick={()=>setSent(false)}>Book Another →</button>
+              </div>
+            ) : (
+              <>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.5rem",fontWeight:600,marginBottom:"1.8rem"}}>Schedule Your Visit</div>
+                <div className="form-grid-2">
+                  <div className="form-field"><label className="inp-label">First Name</label><input className="inp" placeholder="Aarav"/></div>
+                  <div className="form-field"><label className="inp-label">Last Name</label><input className="inp" placeholder="Shrestha"/></div>
+                </div>
+                <div className="form-field"><label className="inp-label">Phone Number</label><input className="inp" placeholder="+977 98XXXXXXXX" type="tel"/></div>
+                <div className="form-field"><label className="inp-label">Email Address</label><input className="inp" placeholder="you@email.com" type="email"/></div>
+                <div className="form-grid-2">
+                  <div className="form-field">
+                    <label className="inp-label">Department</label>
+                    <select className="inp">
+                      <option>Select Department</option>
+                      <option>Cardiology</option><option>Neurology</option><option>Orthopedics</option>
+                      <option>Oncology</option><option>Pediatrics</option><option>General Medicine</option>
+                      <option>Ophthalmology</option><option>Pulmonology</option>
+                    </select>
+                  </div>
+                  <div className="form-field"><label className="inp-label">Preferred Date</label><input className="inp" type="date"/></div>
+                </div>
+                <div className="form-field">
+                  <label className="inp-label">Visit Type</label>
+                  <div style={{display:"flex",gap:"0.8rem",flexWrap:"wrap",marginTop:"0.4rem"}}>
+                    {["In-Person","Telemedicine","Home Visit"].map(v=>(
+                      <label key={v} style={{display:"flex",alignItems:"center",gap:"6px",cursor:"pointer",fontSize:"0.88rem",color:"var(--ink-mid)"}}>
+                        <input type="radio" name="vtype" defaultChecked={v==="In-Person"} style={{accentColor:"var(--sky)"}}/>{v}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="form-field"><label className="inp-label">Symptoms / Notes</label><textarea className="inp" rows={3} placeholder="Briefly describe your concern..." style={{resize:"vertical"}}/></div>
+                <button className="btn btn-sky" style={{width:"100%",justifyContent:"center",padding:"0.95rem",borderRadius:"var(--r-sm)",fontSize:"0.95rem",marginTop:"0.3rem"}} onClick={()=>setSent(true)}>
+                  Confirm Appointment →
+                </button>
+                <p style={{fontSize:"0.74rem",color:"var(--ink-light)",marginTop:"0.8rem",textAlign:"center"}}>Our team will contact you within 2 hours · All information is kept confidential</p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Quick contact cards */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"1.3rem",marginTop:"3rem"}}>
+          {[
+            {icon:"🚨",bg:"#fee2e2",title:"Emergency",desc:"24/7 emergency trauma care",num:"+977 01-5678999"},
+            {icon:"💬",bg:"#e8f2f9",title:"General Inquiries",desc:"Mon–Fri 8AM to 6PM",num:"+977 01-5678900"},
+            {icon:"💻",bg:"#e4ede4",title:"Telemedicine",desc:"Video consult from anywhere",num:"Book via App"},
+          ].map(c=>(
+            <div key={c.title} className="card reveal" style={{padding:"1.8rem",borderLeft:`4px solid ${c.bg==="#fee2e2"?"var(--terra)":c.bg==="#e8f2f9"?"var(--sky)":"var(--sage)"}`}}>
+              <div style={{fontSize:"1.6rem",marginBottom:"0.7rem"}}>{c.icon}</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.1rem",fontWeight:600,marginBottom:"0.3rem"}}>{c.title}</div>
+              <div style={{fontSize:"0.8rem",color:"var(--ink-light)",marginBottom:"0.5rem"}}>{c.desc}</div>
+              <div style={{fontWeight:600,color:"var(--sky)",fontSize:"0.9rem"}}>{c.num}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════ */
+function Footer({ setPage }) {
+  const go = p => { setPage(p); window.scrollTo(0,0); };
+  return (
+    <footer className="footer">
+      <div className="footer-grid">
+        <div>
+          <div className="footer-brand">Aurora <span>Hospital</span></div>
+          <p className="footer-desc">Nepal's leading tertiary care hospital, delivering compassionate world-class healthcare since 1998. JCI Accredited · 1,200 Beds · 500+ Specialists.</p>
+          <div style={{display:"flex",gap:"0.7rem",marginTop:"1.5rem"}}>
+            {["f","in","tw","yt"].map(s=>(
+              <div key={s} style={{width:34,height:34,background:"rgba(255,255,255,0.08)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:"0.8rem",color:"rgba(255,255,255,0.65)",transition:"background 0.2s"}}
+                onMouseOver={e=>e.currentTarget.style.background="rgba(255,255,255,0.16)"}
+                onMouseOut={e=>e.currentTarget.style.background="rgba(255,255,255,0.08)"}>{s}</div>
+            ))}
+          </div>
+        </div>
+        <div className="footer-col">
+          <h5>Quick Links</h5>
+          <ul>{["Home","Departments","Doctors","About","Contact"].map(p=><li key={p} onClick={()=>go(p)}>{p}</li>)}</ul>
+        </div>
+        <div className="footer-col">
+          <h5>Services</h5>
+          <ul>{["Cardiology","Neurosciences","Orthopedics","Oncology","Neonatology","Ophthalmology"].map(s=><li key={s}>{s}</li>)}</ul>
+        </div>
+        <div className="footer-col">
+          <h5>Contact</h5>
+          <ul>
+            <li>📞 +977 01-5678900</li>
+            <li>🚨 Emergency: 5678999</li>
+            <li>📧 info@aurorahospital.np</li>
+            <li>📍 Maharajgunj, Kathmandu</li>
+            <li>🕐 OPD: 8AM–8PM</li>
+          </ul>
+        </div>
+      </div>
+      <div className="footer-bottom">
+        <span>© 2026 Aurora Hospital Pvt. Ltd. All rights reserved.</span>
+        <span>Privacy Policy · Terms of Use · NABH Accredited</span>
+      </div>
+    </footer>
+  );
+}
+
+/* ═══════════════════════════════════════
+   ROOT APP
+═══════════════════════════════════════ */
+function App() {
+  const [page, setPage] = useState("Home");
+
+  return (
+    <>
+      <style>{globalCSS}</style>
+      <Nav page={page} setPage={setPage} />
+      <div style={{minHeight:"100vh",paddingTop:0}}>
+        {page === "Home"        && <HomePage setPage={setPage}/>}
+        {page === "Departments" && <DepartmentsPage />}
+        {page === "Doctors"     && <DoctorsPage setPage={setPage}/>}
+        {page === "About"       && <AboutPage />}
+        {page === "Contact"     && <ContactPage />}
+      </div>
+      {/* DEV CTA AURORA */}
+      <div style={{ padding: "60px 5%", background: "var(--sand2)", display: "flex", justifyContent: "center" }}>
+        <div style={{ width: "100%", maxWidth: 1000, background: "white", borderRadius: "var(--r-md)", padding: "3rem", display: "grid", gridTemplateColumns: "1fr auto", gap: "3rem", border: "1px solid var(--border)", boxShadow: "var(--shadow-md)", alignItems: "center" }}>
+          <div>
+            <div className="tag" style={{ marginBottom: "1rem" }}>Developer & Architect</div>
+            <h2 className="section-heading" style={{ fontSize: "clamp(2rem, 3.5vw, 2.6rem)", marginBottom: "0.5rem" }}>
+              Engineered by <span className="terra">Sushant Raj Mishra</span>
+            </h2>
+            <p className="section-sub" style={{ maxWidth: 500 }}>
+              Specializing in highly scalable web architectures and dynamic user experiences tailored for the modern healthcare industry.
+            </p>
+          </div>
+          <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "1rem" }}>
+            <a href="https://sushantrm.com.np/" target="_blank" className="btn btn-sky" style={{ padding: "1rem 2rem", fontSize: "1rem" }}>View Portfolio ↗</a>
+            <div style={{ fontSize: "0.8rem", color: "var(--ink-light)", fontWeight: 600 }}>Frontend • Backend • UI/UX</div>
+          </div>
+        </div>
+      </div>
+      <Footer setPage={setPage}/>
+    </>
+  );
+}
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
